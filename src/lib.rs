@@ -1,8 +1,13 @@
+use infer;
 use std::path::PathBuf;
 use std::sync::mpsc;
 use std::sync::mpsc::Receiver;
 use std::thread;
 use walkdir::WalkDir;
+
+const AUDIO: &str = "audio";
+const IMAGE: &str = "image";
+const VIDEO: &str = "video";
 
 pub fn start_walking(first_step: &PathBuf) -> Receiver<String> {
     let (tx, rx) = mpsc::channel();
@@ -14,7 +19,23 @@ pub fn start_walking(first_step: &PathBuf) -> Receiver<String> {
             if let Ok(entry) = entry_result {
                 if entry.file_type().is_file() {
                     if let Some(path) = entry.path().to_str() {
-                        tx.send(path.to_string()).unwrap();
+                        match infer::get_from_path(path.to_string()) {
+                            Ok(Some(info)) => {
+                                if info.mime_type().starts_with(AUDIO)
+                                    || info.mime_type().starts_with(IMAGE)
+                                    || info.mime_type().starts_with(VIDEO)
+                                {
+                                    tx.send(path.to_string()).unwrap();
+                                }
+                            }
+                            Ok(None) => {
+                                eprintln!("Unknown file type");
+                            }
+                            Err(e) => {
+                                eprintln!("Looks like something went wrong");
+                                eprintln!("{}", e);
+                            }
+                        }
                     }
                 }
             }
@@ -42,6 +63,6 @@ mod tests {
             items.push(received);
         }
         // Real amount is 8 media files, but for now we accept the one Markdown file as well.
-        assert_eq!(items.len(), 9);
+        assert_eq!(items.len(), 8);
     }
 }
