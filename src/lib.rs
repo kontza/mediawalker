@@ -1,4 +1,5 @@
 use infer;
+use std::io;
 use std::path::PathBuf;
 use std::sync::mpsc;
 use std::sync::mpsc::Receiver;
@@ -9,7 +10,7 @@ const AUDIO: &str = "audio";
 const IMAGE: &str = "image";
 const VIDEO: &str = "video";
 
-pub fn start_walking(first_step: &PathBuf) -> Receiver<String> {
+pub fn start_walking(first_step: &PathBuf) -> Receiver<Result<String, io::Error>> {
     let (tx, rx) = mpsc::channel();
 
     let starter = first_step.clone();
@@ -25,15 +26,17 @@ pub fn start_walking(first_step: &PathBuf) -> Receiver<String> {
                                     || info.mime_type().starts_with(IMAGE)
                                     || info.mime_type().starts_with(VIDEO)
                                 {
-                                    tx.send(path.to_string()).unwrap();
+                                    tx.send(Ok(path.to_string())).unwrap();
                                 }
                             }
                             Ok(None) => {
-                                eprintln!("Unknown file type");
+                                // eprintln!("Unknown file type");
+                                tx.send(Ok(format!("!{}", path.to_string()))).unwrap();
                             }
                             Err(e) => {
-                                eprintln!("Looks like something went wrong");
-                                eprintln!("{}", e);
+                                // eprintln!("Looks like something went wrong");
+                                // eprintln!("{}", e);
+                                tx.send(Err(e)).unwrap();
                             }
                         }
                     }
@@ -60,7 +63,16 @@ mod tests {
         let mut items: Vec<String> = vec![];
         let rx = start_walking(&resource_dir);
         for received in rx {
-            items.push(received);
+            match received {
+                Ok(file_path) => {
+                    if !file_path.starts_with("!") {
+                        items.push(file_path);
+                    } else {
+                        println!("Unknown media type: {}", file_path);
+                    }
+                }
+                Err(err) => println!("{:?}", err),
+            }
         }
         // Real amount is 8 media files, but for now we accept the one Markdown file as well.
         assert_eq!(items.len(), 8);
