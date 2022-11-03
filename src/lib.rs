@@ -10,7 +10,12 @@ const AUDIO: &str = "audio";
 const IMAGE: &str = "image";
 const VIDEO: &str = "video";
 
-pub fn start_walking(first_step: &PathBuf) -> Receiver<Result<String, io::Error>> {
+pub struct MediaWalkResult {
+    path: String,
+    result: Result<bool, io::Error>,
+}
+
+pub fn start_walking(first_step: &PathBuf) -> Receiver<MediaWalkResult> {
     let (tx, rx) = mpsc::channel();
 
     let starter = first_step.clone();
@@ -20,23 +25,29 @@ pub fn start_walking(first_step: &PathBuf) -> Receiver<Result<String, io::Error>
             if let Ok(entry) = entry_result {
                 if entry.file_type().is_file() {
                     if let Some(path) = entry.path().to_str() {
+                        let mut walk_result = MediaWalkResult {
+                            path: path.to_string(),
+                            result: Ok(true),
+                        };
                         match infer::get_from_path(path.to_string()) {
                             Ok(Some(info)) => {
                                 if info.mime_type().starts_with(AUDIO)
                                     || info.mime_type().starts_with(IMAGE)
                                     || info.mime_type().starts_with(VIDEO)
                                 {
-                                    tx.send(Ok(path.to_string())).unwrap();
+                                    tx.send(walk_result).unwrap();
                                 }
                             }
                             Ok(None) => {
                                 // eprintln!("Unknown file type");
-                                tx.send(Ok(format!("!{}", path.to_string()))).unwrap();
+                                walk_result.result = Ok(false);
+                                tx.send(walk_result).unwrap();
                             }
                             Err(e) => {
                                 // eprintln!("Looks like something went wrong");
                                 // eprintln!("{}", e);
-                                tx.send(Err(e)).unwrap();
+                                walk_result.result = Err(e);
+                                tx.send(walk_result).unwrap();
                             }
                         }
                     }
@@ -62,19 +73,24 @@ mod tests {
         resource_dir.push("test");
         let mut items: Vec<String> = vec![];
         let rx = start_walking(&resource_dir);
+        let mut invalid_count = 0;
         for received in rx {
-            match received {
-                Ok(file_path) => {
-                    if !file_path.starts_with("!") {
-                        items.push(file_path);
+            match received.result {
+                Ok(result) => {
+                    if result == true {
+                        items.push(received.path);
                     } else {
-                        println!("Unknown media type: {}", file_path);
+                        println!("Unknown media type: {}", received.path);
+                        invalid_count += 1;
                     }
                 }
-                Err(err) => println!("{:?}", err),
+                Err(err) => {
+                    println!("{}: {:?}", received.path, err);
+                }
             }
         }
         // Real amount is 8 media files, but for now we accept the one Markdown file as well.
         assert_eq!(items.len(), 8);
+        assert_eq!(invalid_count, 1);
     }
 }
