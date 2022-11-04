@@ -1,7 +1,12 @@
 [package]
 name = "mediawalker"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
+license = "MIT"
+description = "Walks a given directory searching for media (audio/image/video) files"
+homepage = "https://github.com/kontza/mediawalker"
+repository = "https://github.com/kontza/mediawalker"
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
