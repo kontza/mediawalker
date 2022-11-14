@@ -27,9 +27,17 @@ const VIDEO: &str = "video";
 ///   - _io::Error_: Something went wrong while trying to figure out
 ///         the media type.
 pub struct MediaWalkResult {
-    path: String,
-    mime: String,
-    result: Result<bool, io::Error>,
+    /// The path of the found file.
+    pub path: String,
+    /// The file's MIME type.
+    pub mime: String,
+    /// - _bool_:
+    ///   - `true`: A file and a media type for it was found.
+    ///   - `false`: A file was found, but no media
+    ///       type could not be found for it.
+    /// - _io::Error_: Something went wrong while trying to figure out
+    ///       the media type.
+    pub result: Result<bool, io::Error>,
 }
 
 /// Start walkding through the given directory. Returns a channel of
