@@ -2,7 +2,6 @@
 //! (almost as fast as walkdir).
 //!
 #![warn(missing_docs)]
-#![deny(rustdoc::missing_doc_code_examples)]
 #![allow(unused)]
 use infer;
 use std::io;
@@ -46,6 +45,13 @@ pub struct MediaWalkResult {
 /// # Examples
 ///
 /// ```
+/// use std::env;
+/// use std::path::PathBuf;
+/// use mediawalker::{start_walking, MediaWalkResult};
+/// let mut resource_dir = PathBuf::new();
+/// if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
+///     resource_dir.push(manifest_dir);
+/// }
 /// let rx = start_walking(&resource_dir);
 /// for received in rx {
 ///     match received.result {
@@ -61,7 +67,6 @@ pub struct MediaWalkResult {
 ///         }
 ///     }
 /// }
-
 pub fn start_walking(first_step: &PathBuf) -> Receiver<MediaWalkResult> {
     let (tx, rx) = mpsc::channel();
 
