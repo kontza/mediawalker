@@ -17,7 +17,7 @@ const VIDEO: &str = "video";
 
 /// This struct contains the result for a single found file.
 /// - `path`: The path of the found file.
-/// - `mime`: The file's MIME type.
+/// - `mime`: The MIME type of the found file.
 /// - `result`:
 ///   - _bool_:
 ///     - `true`: A file and a media type for it was found.
